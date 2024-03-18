@@ -19,35 +19,69 @@ func Store(fileName string) *os.File {
 	return file
 }
 
-func Read(fileName string) *os.File {
-	file, err := os.Open("data/" + fileName + ".bin")
+func Read(fileName string) (*os.File, error) {
+	file, err := os.OpenFile("data/"+fileName+".bin", 0666, os.ModePerm)
 	if err != nil {
-		fmt.Println("Error opening file:", err)
-		return nil
+		return nil, err
 	}
 
-	return file
+	return file, nil
 }
 
-func Insert[S any](filename string, data S) {
-	file := Store(filename)
-	defer file.Close()
+func Insert[S any](filename string, data []S) {
+	file, err := Read(filename)
+	if err == nil {
+		decoder := gob.NewDecoder(file)
+		var currentData []S
+		err := decoder.Decode(&currentData)
+		if err != nil {
+			fmt.Println("Error decoding binary data:", err)
+			return
+		}
 
-	encoder := gob.NewEncoder(file)
-	err := encoder.Encode(data)
-	if err != nil {
-		fmt.Println("Error encoding map to binary:", err)
-		return
+		currentData = append(currentData, data...)
+		fmt.Println(currentData)
+
+		_, err = file.Seek(0, 0)
+		if err != nil {
+			fmt.Println("Error seeking file:", err)
+			return
+		}
+
+		encoder := gob.NewEncoder(file)
+		err = encoder.Encode(currentData)
+		if err != nil {
+			fmt.Println("Error encoding map to binary:", err)
+			return
+		}
+
+	} else {
+		file := Store(filename)
+		defer file.Close()
+
+		encoder := gob.NewEncoder(file)
+		err := encoder.Encode(data)
+		if err != nil {
+			fmt.Println("Error encoding map to binary:", err)
+			return
+		}
+
 	}
+	defer file.Close()
 }
 
 func Find[S any](filename string, key string, value any) any {
-	file := Read(filename)
+	file, err := Read(filename)
+	if err != nil {
+		fmt.Println("Error decoding binary data:", err)
+		return nil
+	}
+
 	defer file.Close()
 
 	decoder := gob.NewDecoder(file)
 	var data []S
-	err := decoder.Decode(&data)
+	err = decoder.Decode(&data)
 	if err != nil {
 		fmt.Println("Error decoding binary data:", err)
 		return nil

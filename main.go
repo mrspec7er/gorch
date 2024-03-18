@@ -18,14 +18,16 @@ func main() {
 		{ID: 1, Label: "Name", Value: 111},
 		{ID: 2, Label: "Specialty", Value: 222},
 		{ID: 3, Label: "Net Worth", Value: 333},
+		{ID: 4, Label: "Income", Value: 444},
+		{ID: 5, Label: "Status", Value: 555},
 	}
 
-	filename := "test_" + time.Now().GoString()
+	filename := "test_" + "time.Now().GoString()s"
 	pkg.Insert(filename, data)
 
 	time.Sleep(2 * time.Second)
 
-	result := pkg.Find[Dummy](filename, "Value", "222")
+	result := pkg.Find[Dummy](filename, "Value", 222)
 
 	fmt.Println("Result: ", result)
 }
