@@ -70,7 +70,7 @@ func Insert[S any](filename string, data []S) {
 	defer file.Close()
 }
 
-func Find[S any](filename string, key string, value any) any {
+func Find[S any](filename string, key string, value any) *S {
 	file, err := Read(filename)
 	if err != nil {
 		fmt.Println("Error decoding binary data:", err)
@@ -87,21 +87,32 @@ func Find[S any](filename string, key string, value any) any {
 		return nil
 	}
 
+	var finalResult *S
+
 	for _, d := range data {
-		val := reflect.ValueOf(d)
-		if val.Kind() != reflect.Struct {
-			fmt.Println("Error: input data is not a struct")
-			return nil
+		filterResult := FilterData(d, key, value)
+		if filterResult != nil {
+			finalResult = filterResult
 		}
-		fieldType := val.FieldByName(key).Type()
-		if fieldType != reflect.TypeOf(value) {
-			fmt.Println("Field type doesn't match value type")
-			continue
-		}
-		fieldValue := val.FieldByName(key).Interface()
-		if fieldValue == value {
-			return d
-		}
+	}
+
+	return finalResult
+}
+
+func FilterData[S any](d S, key string, value any) *S {
+	val := reflect.ValueOf(d)
+	if val.Kind() != reflect.Struct {
+		fmt.Println("Error: input data is not a struct")
+		return nil
+	}
+	fieldType := val.FieldByName(key).Type()
+	if fieldType != reflect.TypeOf(value) {
+		fmt.Println("Field type doesn't match value type")
+		return nil
+	}
+	fieldValue := val.FieldByName(key).Interface()
+	if fieldValue == value {
+		return &d
 	}
 
 	return nil

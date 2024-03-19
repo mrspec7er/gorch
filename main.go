@@ -29,5 +29,5 @@ func main() {
 
 	result := pkg.Find[Dummy](filename, "Value", 222)
 
-	fmt.Println("Result: ", result)
+	fmt.Println("Result: ", *result)
 }
