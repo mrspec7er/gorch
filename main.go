@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/mrspec7er/gorch/pkg"
@@ -29,5 +30,7 @@ func main() {
 
 	result := pkg.Find[Dummy](filename, "Value", 222)
 
-	fmt.Println("Result: ", *result)
+	for i, v := range result {
+		fmt.Println("RESULT: "+strconv.Itoa(i), v)
+	}
 }

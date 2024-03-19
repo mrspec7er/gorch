@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"sync"
 )
 
 type Any interface{}
@@ -70,7 +71,7 @@ func Insert[S any](filename string, data []S) {
 	defer file.Close()
 }
 
-func Find[S any](filename string, key string, value any) *S {
+func Find[S any](filename string, key string, value any) []*S {
 	file, err := Read(filename)
 	if err != nil {
 		fmt.Println("Error decoding binary data:", err)
@@ -87,33 +88,45 @@ func Find[S any](filename string, key string, value any) *S {
 		return nil
 	}
 
-	var finalResult *S
+	var finalResult []*S
 
+	ctx := make(chan []*S, len(data))
+	wg := &sync.WaitGroup{}
+
+	wg.Add(len(data))
 	for _, d := range data {
-		filterResult := FilterData(d, key, value)
-		if filterResult != nil {
-			finalResult = filterResult
-		}
+		go FilterData(d, key, value, ctx, wg)
+	}
+
+	wg.Wait()
+	close(ctx)
+
+	for v := range ctx {
+		finalResult = append(finalResult, v...)
 	}
 
 	return finalResult
 }
 
-func FilterData[S any](d S, key string, value any) *S {
+func FilterData[S any](d S, key string, value any, ctx chan []*S, wg *sync.WaitGroup) {
 	val := reflect.ValueOf(d)
 	if val.Kind() != reflect.Struct {
 		fmt.Println("Error: input data is not a struct")
-		return nil
+		wg.Done()
+		return
 	}
 	fieldType := val.FieldByName(key).Type()
 	if fieldType != reflect.TypeOf(value) {
 		fmt.Println("Field type doesn't match value type")
-		return nil
+		wg.Done()
+		return
 	}
 	fieldValue := val.FieldByName(key).Interface()
 	if fieldValue == value {
-		return &d
+		ctx <- []*S{&d}
+		wg.Done()
+		return
 	}
 
-	return nil
+	wg.Done()
 }
