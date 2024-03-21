@@ -17,22 +17,22 @@ func readFile(fileName string) (*os.File, error) {
 	return file, nil
 }
 
-func filterData[S any](d S, key string, value any, ctx chan []*S, wg *sync.WaitGroup) {
-	val := reflect.ValueOf(d)
-	if val.Kind() != reflect.Struct {
+func filterData[S any](data S, key string, value any, ctx chan []*S, wg *sync.WaitGroup) {
+	field := reflect.ValueOf(data)
+	if field.Kind() != reflect.Struct {
 		fmt.Println("Error: input data is not a struct")
 		wg.Done()
 		return
 	}
-	fieldType := val.FieldByName(key).Type()
+	fieldType := field.FieldByName(key).Type()
 	if fieldType != reflect.TypeOf(value) {
 		fmt.Println("Field type doesn't match value type")
 		wg.Done()
 		return
 	}
-	fieldValue := val.FieldByName(key).Interface()
-	if fieldValue == value {
-		ctx <- []*S{&d}
+	storedValue := field.FieldByName(key).Interface()
+	if storedValue == value {
+		ctx <- []*S{&data}
 		wg.Done()
 		return
 	}
@@ -50,20 +50,20 @@ func Find[S any](filename string, key string, value any) []*S {
 	defer file.Close()
 
 	decoder := gob.NewDecoder(file)
-	var data []S
-	err = decoder.Decode(&data)
+	var storedData []S
+	err = decoder.Decode(&storedData)
 	if err != nil {
-		fmt.Println("Error decoding binary data:", err)
+		fmt.Println("Error decoding binary storedData:", err)
 		return nil
 	}
 
 	var finalResult []*S
 
-	ctx := make(chan []*S, len(data))
+	ctx := make(chan []*S, len(storedData))
 	wg := &sync.WaitGroup{}
 
-	wg.Add(len(data))
-	for _, d := range data {
+	wg.Add(len(storedData))
+	for _, d := range storedData {
 		go filterData(d, key, value, ctx, wg)
 	}
 
