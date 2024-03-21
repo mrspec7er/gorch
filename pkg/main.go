@@ -8,9 +8,7 @@ import (
 	"sync"
 )
 
-type Any interface{}
-
-func Store(fileName string) *os.File {
+func createFile(fileName string) *os.File {
 	file, err := os.Create("data/" + fileName + ".bin")
 	if err != nil {
 		fmt.Println("Error creating file:", err)
@@ -20,7 +18,7 @@ func Store(fileName string) *os.File {
 	return file
 }
 
-func Read(fileName string) (*os.File, error) {
+func readFile(fileName string) (*os.File, error) {
 	file, err := os.OpenFile("data/"+fileName+".bin", 0666, os.ModePerm)
 	if err != nil {
 		return nil, err
@@ -30,7 +28,7 @@ func Read(fileName string) (*os.File, error) {
 }
 
 func Insert[S any](filename string, data []S) {
-	file, err := Read(filename)
+	file, err := readFile(filename)
 	if err == nil {
 		decoder := gob.NewDecoder(file)
 		var currentData []S
@@ -57,7 +55,7 @@ func Insert[S any](filename string, data []S) {
 		}
 
 	} else {
-		file := Store(filename)
+		file := createFile(filename)
 		defer file.Close()
 
 		encoder := gob.NewEncoder(file)
@@ -72,7 +70,7 @@ func Insert[S any](filename string, data []S) {
 }
 
 func Find[S any](filename string, key string, value any) []*S {
-	file, err := Read(filename)
+	file, err := readFile(filename)
 	if err != nil {
 		fmt.Println("Error decoding binary data:", err)
 		return nil
@@ -95,7 +93,7 @@ func Find[S any](filename string, key string, value any) []*S {
 
 	wg.Add(len(data))
 	for _, d := range data {
-		go FilterData(d, key, value, ctx, wg)
+		go filterData(d, key, value, ctx, wg)
 	}
 
 	wg.Wait()
@@ -108,7 +106,7 @@ func Find[S any](filename string, key string, value any) []*S {
 	return finalResult
 }
 
-func FilterData[S any](d S, key string, value any, ctx chan []*S, wg *sync.WaitGroup) {
+func filterData[S any](d S, key string, value any, ctx chan []*S, wg *sync.WaitGroup) {
 	val := reflect.ValueOf(d)
 	if val.Kind() != reflect.Struct {
 		fmt.Println("Error: input data is not a struct")
