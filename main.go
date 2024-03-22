@@ -33,4 +33,6 @@ func main() {
 	for i, v := range result {
 		fmt.Println("RESULT: "+strconv.Itoa(i), v)
 	}
+
+	pkg.Reset(filename)
 }

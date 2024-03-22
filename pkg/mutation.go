@@ -16,6 +16,14 @@ func createFile(fileName string) *os.File {
 	return file
 }
 
+func removeFile(fileName string) {
+	err := os.Remove("data/" + fileName + ".bin")
+	if err != nil {
+		fmt.Println("Error creating file:", err)
+		return
+	}
+}
+
 func Insert[S any](filename string, data []S) {
 	file, err := readFile(filename)
 	if err == nil {
@@ -56,4 +64,8 @@ func Insert[S any](filename string, data []S) {
 
 	}
 	defer file.Close()
+}
+
+func Reset(filename string) {
+	removeFile(filename)
 }
